@@ -1,8 +1,9 @@
 from django import forms
-from core.models import Todo
+
+from .models import Todo
 
 
 class TodoForm(forms.ModelForm):
     class Meta:
         model = Todo
-        fields = ('description', 'is_completed')
+        fields = ['description', 'is_completed']
