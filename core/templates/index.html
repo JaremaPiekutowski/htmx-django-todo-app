@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load widget_tweaks %}
+{% load partials %}
 
 {% block content %}
 
@@ -7,8 +8,10 @@
     <h1 class="prose-2xl mb-4">{{ user.username }}'s To-Do list</h1>
 
     <form class="mb-4"
-        hx-post="{% url submit-todo %}""
-        hx-target="#todo-table-body">
+        hx-post="{% url 'submit-todo' %}""
+        hx-target="#todo-table-body"
+        hx-swap="beforeend"
+        hx-on::after-request="this.reset()">
 
         <div class="form-control">
             <label>Task Description</label>
@@ -28,15 +31,29 @@
                 <th>Description</th>
                 <th>Created</th>
                 <th>Completed</th>
+                <th>Actions</th>
             </tr>
         </thead>
         <tbody id="todo-table-body">
             {% for todo in todos %}
-            <tr>
-                <td>{{ todo.description }}</td>
-                <td>{{ todo.created_date }}</td>
-                <td>{{ todo.is_completed }}</td>
-            </tr>
+                {% partialdef todoitem-partial inline=True %}
+                    <tr>
+                        <td>{{ todo.description }}</td>
+                        <td>{{ todo.created_date }}</td>
+                        <td>{{ todo.is_completed }}</td>
+                        <td>
+                            {% if not todo.is_completed %}
+                                <button class="btn btn-xs btn-success"
+                                    hx-post="{% url 'complete-todo' todo.pk %}"
+                                    hx-target="closest tr"
+                                    hx-swap="outerHTML">Mark complete</button>
+                            {% endif %}
+                            <button class="btn btn-xs btn-error"
+                                hx-delete="{% url 'delete-todo' todo.pk %}"
+                                hx-on:delete-todo="this.closest('tr').remove()">Delete</button>
+                        </td>
+                    </tr>
+                {% endpartialdef %}
             {% endfor %}
         </tbody>
     </table>

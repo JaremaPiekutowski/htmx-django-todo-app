@@ -1,6 +1,7 @@
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import render
-from django.views.decorators.http import require_POST
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404, render
+from django.views.decorators.http import require_http_methods, require_POST
 
 from core.forms import TodoForm
 from core.models import Todo
@@ -27,4 +28,45 @@ def submit_todo(request):
         todo = form.save(commit=False)
         todo.user = request.user
         todo.save()
-    return index(request)
+
+    # Return a htmx partial template
+    context = {'todo': todo}
+    return render(
+        request=request,
+        template_name="index.html#todoitem-partial",
+        context=context
+    )
+
+
+@login_required
+@require_POST
+def complete_todo(request, pk):
+    todo = get_object_or_404(
+        Todo,
+        pk=pk,
+        user=request.user
+        )
+    todo.is_completed = True
+    todo.save()
+
+    context = {'todo': todo}
+    return render(
+        request=request,
+        template_name="index.html#todoitem-partial",
+        context=context
+    )
+
+
+@login_required
+@require_http_methods(["DELETE"])
+def delete_todo(request, pk):
+    todo = get_object_or_404(
+        Todo,
+        pk=pk,
+        user=request.user
+        )
+    todo.delete()
+
+    response = HttpResponse(status=204)
+    response['HX-Trigger'] = 'delete-todo'
+    return response
